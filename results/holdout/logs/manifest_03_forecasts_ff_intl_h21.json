@@ -1,0 +1,24 @@
+{
+  "stage": "03_forecasts_ff_intl_h21",
+  "time_utc": "2026-10-08 10:15:48",
+  "config_hash": "175f8a31c2",
+  "smoke_test": false,
+  "mode": "holdout",
+  "signoff": true,
+  "frozen_commit": "CalVol_frozen_2026-10-08.zip",
+  "python": "3.13.15",
+  "platform": "Linux-6.6.122+-x86_64-with-glibc2.39",
+  "versions": {
+    "numpy": "2.1.3",
+    "pandas": "2.2.3",
+    "scipy": "1.16.3",
+    "torch": "2.11.0+cu130",
+    "arch": "8.0.0",
+    "statsmodels": "0.15.0",
+    "yfinance": "0.2.66",
+    "matplotlib": "3.10.0"
+  },
+  "extra": {
+    "rows": 11130
+  }
+}
