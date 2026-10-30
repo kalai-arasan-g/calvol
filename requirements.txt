@@ -1,0 +1,8 @@
+# Google Colab already provides numpy, pandas, scipy, torch, matplotlib, statsmodels, requests.
+arch>=6.3
+yfinance>=0.2.54
+pyarrow>=14
+pyyaml>=6
+joblib>=1.3
+statsmodels>=0.14
+pytest>=7

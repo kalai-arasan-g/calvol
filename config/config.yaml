@@ -1,0 +1,129 @@
+# =============================================================================
+# Asset-level calibrated volatility bounds and conformal volatility management
+# Every setting below is FROZEN by the research-design document (section numbers in brackets).
+# Do not change anything after sign-off except project.mode / project.signoff / project.frozen_commit.
+# =============================================================================
+
+project:
+  seed: 42
+  device: auto
+  smoke_test: false            # true = synthetic data, tiny grids (pipeline check only)
+  # ---- pre-registration gate [Sec. 9] ------------------------------------------
+  mode: development             # development | holdout
+  signoff: false                # set true only after both authors sign the design document
+  frozen_commit: ""            # code archive id (git hash or zip name) recorded before the holdout run
+  panels: [assets, ff_us, ff_intl]
+
+# ----------------------------------------------------------------------------- data [Sec. 4]
+panels:
+  assets:                       # calibration panel (Yahoo) - H1, H2, H4
+    source: yahoo
+    start: "1995-01-01"
+    dev_end: "2014-12-31"
+    end: "2025-12-31"
+    first_forecast_year: 2005
+    refit_every_years: 1
+    horizons: [21, 5, 1]
+    instruments:
+      index: ["^GSPC", "^NDX", "^RUT", "^DJI", "^GSPTSE", "^BVSP", "^MXX", "^FTSE", "^GDAXI", "^FCHI",
+              "^STOXX50E", "^N225", "^HSI", "^KS11", "^TWII", "^AXJO", "^NSEI", "^BSESN"]
+      sector_etf: ["XLB", "XLE", "XLF", "XLI", "XLK", "XLP", "XLU", "XLV", "XLY"]
+      country_etf: ["EWJ", "EWG", "EWU", "EWZ", "EWA", "EWC", "EWH", "EWY", "EWT", "EWW", "EWS"]
+      bond_etf: ["TLT", "IEF", "SHY", "LQD", "HYG", "EMB"]
+      fx: ["EURUSD=X", "GBPUSD=X", "USDJPY=X", "AUDUSD=X", "USDCAD=X", "USDCHF=X", "USDINR=X"]
+      futures: ["GC=F", "SI=F", "HG=F", "CL=F", "NG=F", "ZC=F", "ZW=F"]
+    exploratory_instruments:    # reported separately, never in confirmatory tests
+      crypto: ["BTC-USD", "ETH-USD"]
+    regime_symbol: "^VIX"
+  ff_us:                        # Kenneth French US daily factors - H3 (and exploratory calibration)
+    source: french
+    region: US
+    start: "1926-07-01"
+    dev_end: "1999-12-31"
+    end: "2025-12-31"
+    first_forecast_year: 1935
+    refit_every_years: 5
+    horizons: [21]
+  ff_intl:                      # Kenneth French international daily factors - H3
+    source: french
+    region: INTL
+    start: "1990-07-01"
+    dev_end: "2007-12-31"
+    end: "2025-12-31"
+    first_forecast_year: 1995
+    refit_every_years: 2
+    horizons: [21]
+
+cleaning:
+  max_ffill_days: 5             # union calendar across countries: allow longer holiday gaps
+  bad_print_abs: 0.50           # |log return| that triggers a check
+  bad_print_reversal: 0.40      # removed if the next day reverses by more than this
+  futures_bad_print_abs: 0.15   # futures roll jumps [Sec. 4.4]
+  futures_bad_print_reversal: 0.12
+  max_missing_window: 0.10
+  max_missing_target: 0.20
+  var_floor: 1.0e-10
+
+# ----------------------------------------------------------------------------- forecasting [Sec. 5]
+forecast:
+  lookback: 252
+  smooth_days: 5                # z_d = ln mean r^2 over d-4..d
+  train_stride: {21: 5, 5: 3, 1: 2}
+  inner_val_months: 24
+  embargo_days: 21
+  dlinear:
+    loss: qlike
+    weight_decay_grid: [1.0e-2, 1.0e-1, 1.0, 10.0]
+    kernel_grid: [13, 25, 63]
+    lr: 1.0e-3
+    batch_size: 2048
+    max_epochs: 40
+    patience: 4
+    seeds: 5
+  lstm:
+    window: 5
+    hidden: 50
+    layers: 2
+    epochs: 10
+    seeds: 3
+  har_min_obs: 500
+  garch:
+    enabled: true
+    fit_window: 2000
+    max_log_ratio: 1.609        # fallback to EWMA if forecast > 5x away from naive
+  ewma_lambda: 0.94
+
+# ----------------------------------------------------------------------------- conformal [Sec. 6]
+conformal:
+  levels: [0.80, 0.90, 0.95, 0.99]
+  calib_dates: {21: 36, 5: 52, 1: 252}   # number of closed signal dates in the calibration window
+  gamma_grid: [0.005, 0.01, 0.05]
+  vov_window: 252
+  vov_floor: 0.05
+  min_group_scores: 30
+  min_asset_scores: 12
+  base_forecasters: [dl, har, garch, ewma]   # dl is primary
+  # amendments 1-2 (development stage): "ours" standardises each error by the asset's own recent residual median and
+  # upper spread Q90 - Q50 (last scale_window closed forecasts, at least scale_min). "ours_sd" = amendment 1
+  # (mean / sd), "ours_vov" = the originally registered vol-of-vol version.
+  scale_window: {21: 60, 5: 104, 1: 252}
+  scale_min: {21: 12, 5: 26, 1: 60}
+  methods: [ours, ours_mondrian, ours_sd, ours_vov, pooled_split, pooled_aci, per_asset, mondrian, cqr, parametric]
+
+# ----------------------------------------------------------------------------- volatility management [Sec. 7]
+vm:
+  w_max: 2.0
+  min_history_months: 36
+  cost_bps: 10
+  cost_grid_bps: [0, 5, 10, 25, 50]
+  cvm_levels: [0.5, 0.7, 0.8, 0.9]   # level of sigma_up chosen on the development period
+  implementation_lag_days: 0          # 1 = robustness check
+
+# ----------------------------------------------------------------------------- evaluation [Sec. 8]
+evaluation:
+  bootstrap_reps: 5000
+  mcs_reps: 2000
+  mcs_size: 0.10
+  hac_lags: 3
+  primary_horizon: 21
+  primary_base: dl

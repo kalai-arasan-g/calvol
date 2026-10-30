@@ -1,0 +1,16 @@
+cff-version: 1.2.0
+message: "If you use this code, please cite it as below."
+title: "Asset-level calibration of conformal upper bounds for volatility: code and results"
+type: software
+authors:
+  - family-names: "G"
+    given-names: "Kalaiarasan"
+    affiliation: "Amrita School of Artificial Intelligence, Amrita Vishwa Vidyapeetham, Coimbatore, India"
+    email: "kalai.forward@gmail.com"
+license: MIT
+date-released: "2026-10-30"
+keywords:
+  - conformal prediction
+  - volatility forecasting
+  - calibration
+  - risk management
