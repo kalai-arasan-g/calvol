@@ -1,0 +1,224 @@
+project:
+  seed: 42
+  device: auto
+  smoke_test: false
+  mode: development
+  signoff: false
+  frozen_commit: ''
+  panels:
+  - assets
+  - ff_us
+  - ff_intl
+panels:
+  assets:
+    source: yahoo
+    start: '1995-01-01'
+    dev_end: '2014-12-31'
+    end: '2025-12-31'
+    first_forecast_year: 2005
+    refit_every_years: 1
+    horizons:
+    - 21
+    - 5
+    - 1
+    instruments:
+      index:
+      - ^GSPC
+      - ^NDX
+      - ^RUT
+      - ^DJI
+      - ^GSPTSE
+      - ^BVSP
+      - ^MXX
+      - ^FTSE
+      - ^GDAXI
+      - ^FCHI
+      - ^STOXX50E
+      - ^N225
+      - ^HSI
+      - ^KS11
+      - ^TWII
+      - ^AXJO
+      - ^NSEI
+      - ^BSESN
+      sector_etf:
+      - XLB
+      - XLE
+      - XLF
+      - XLI
+      - XLK
+      - XLP
+      - XLU
+      - XLV
+      - XLY
+      country_etf:
+      - EWJ
+      - EWG
+      - EWU
+      - EWZ
+      - EWA
+      - EWC
+      - EWH
+      - EWY
+      - EWT
+      - EWW
+      - EWS
+      bond_etf:
+      - TLT
+      - IEF
+      - SHY
+      - LQD
+      - HYG
+      - EMB
+      fx:
+      - EURUSD=X
+      - GBPUSD=X
+      - USDJPY=X
+      - AUDUSD=X
+      - USDCAD=X
+      - USDCHF=X
+      - USDINR=X
+      futures:
+      - GC=F
+      - SI=F
+      - HG=F
+      - CL=F
+      - NG=F
+      - ZC=F
+      - ZW=F
+    exploratory_instruments:
+      crypto:
+      - BTC-USD
+      - ETH-USD
+    regime_symbol: ^VIX
+  ff_us:
+    source: french
+    region: US
+    start: '1926-07-01'
+    dev_end: '1999-12-31'
+    end: '2025-12-31'
+    first_forecast_year: 1935
+    refit_every_years: 5
+    horizons:
+    - 21
+  ff_intl:
+    source: french
+    region: INTL
+    start: '1990-07-01'
+    dev_end: '2007-12-31'
+    end: '2025-12-31'
+    first_forecast_year: 1995
+    refit_every_years: 2
+    horizons:
+    - 21
+cleaning:
+  max_ffill_days: 5
+  bad_print_abs: 0.5
+  bad_print_reversal: 0.4
+  futures_bad_print_abs: 0.15
+  futures_bad_print_reversal: 0.12
+  max_missing_window: 0.1
+  max_missing_target: 0.2
+  var_floor: 1.0e-10
+forecast:
+  lookback: 252
+  smooth_days: 5
+  train_stride:
+    21: 5
+    5: 3
+    1: 2
+  inner_val_months: 24
+  embargo_days: 21
+  dlinear:
+    loss: qlike
+    weight_decay_grid:
+    - 0.01
+    - 0.1
+    - 1.0
+    - 10.0
+    kernel_grid:
+    - 13
+    - 25
+    - 63
+    lr: 0.001
+    batch_size: 2048
+    max_epochs: 40
+    patience: 4
+    seeds: 5
+  lstm:
+    window: 5
+    hidden: 50
+    layers: 2
+    epochs: 10
+    seeds: 3
+  har_min_obs: 500
+  garch:
+    enabled: true
+    fit_window: 2000
+    max_log_ratio: 1.609
+  ewma_lambda: 0.94
+conformal:
+  levels:
+  - 0.8
+  - 0.9
+  - 0.95
+  - 0.99
+  calib_dates:
+    21: 36
+    5: 52
+    1: 252
+  gamma_grid:
+  - 0.005
+  - 0.01
+  - 0.05
+  vov_window: 252
+  vov_floor: 0.05
+  min_group_scores: 30
+  min_asset_scores: 12
+  base_forecasters:
+  - dl
+  - har
+  - garch
+  - ewma
+  scale_window:
+    21: 60
+    5: 104
+    1: 252
+  scale_min:
+    21: 12
+    5: 26
+    1: 60
+  methods:
+  - ours
+  - ours_mondrian
+  - ours_sd
+  - ours_vov
+  - pooled_split
+  - pooled_aci
+  - per_asset
+  - mondrian
+  - cqr
+  - parametric
+vm:
+  w_max: 2.0
+  min_history_months: 36
+  cost_bps: 10
+  cost_grid_bps:
+  - 0
+  - 5
+  - 10
+  - 25
+  - 50
+  cvm_levels:
+  - 0.5
+  - 0.7
+  - 0.8
+  - 0.9
+  implementation_lag_days: 0
+evaluation:
+  bootstrap_reps: 5000
+  mcs_reps: 2000
+  mcs_size: 0.1
+  hac_lags: 3
+  primary_horizon: 21
+  primary_base: dl
